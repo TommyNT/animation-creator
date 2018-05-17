@@ -23,7 +23,7 @@ def make_animation():
 @app.route("/upload", methods=['POST'])
 def handle_upload():
 	if 'uploaded_file' not in request.files:
-  	flash('No file part')
+	flash('No file part')
   	return redirect(request.url)
 
 uploaded_file = request.files['uploaded_file']
