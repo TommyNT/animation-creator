@@ -2,6 +2,7 @@
 from flask import Flask
 from flask import render_template, request, flash
 from media import S3MediaStorage 
+from media.name_generator import generate_name
 import boto3
 import os
 
@@ -27,11 +28,23 @@ def handle_upload():
   	return redirect(request.url)
 
 uploaded_file = request.files['uploaded_file']
+file_ref = generate_name(uploaded_file.filename)
 media_storage.store(
-	dest="/uploaded/%s" % uploaded_file.filename,
+	dest=file_ref,
 	source=uploaded_file
 	)
+
+	orders.load(current_user()).add_photo(file_ref)
+
 	return "OK"
+
+@app.route("/proceed")
+def proceed():
+	order = orders.load(current_user())
+	handler.handle(order.snapshot())
+
+@app.route("/prepare")
+def prepare()
 
 if __name__ == '__main__':
   app.run(host="0.0.0.0", port=8080, debug=True)
