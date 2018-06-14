@@ -1,13 +1,12 @@
-
-from flask import Flask
-from flask import render_template, request, flash
-from media.s3_storage import S3MediaStorage 
-from media.name_generator import generate_name
 import boto3
 import os
 import json
-
+from flask import Flask
+from flask import render_template, request, flash
+from media.s3_storage import S3MediaStorage
+from media.name_generator import generate_name 
 app = Flask(__name__)
+
 s3 = boto3.resource('s3')
 media_storage = S3MediaStorage(s3, os.getenv('APP_BUCKET_NAME'))
 
@@ -20,14 +19,8 @@ requestQueue = sqs.get_queue_by_name(
 @app.route("/")
 def hello():
     return render_template(
-       'upload_files.html'
+      'upload_files.html'
     )
-
-@app.route("/make-animation")
-def make_animation():
-  return render_template(
-          "make_animation.html",
-          invitation="only limit is yourself")
 
 @app.route("/upload", methods=['POST'])
 def handle_upload():
@@ -36,20 +29,16 @@ def handle_upload():
     return redirect(request.url)
   
   uploaded_file = request.files['uploaded_file']
-  file_ref = generate_name(uploaded_file.filename)
+  destination_name = generate_name(uploaded_file.filename)
   media_storage.store(
-     dest=file_ref,
+     dest=destination_name,
      source=uploaded_file
   )
+  
+  photos_list.append(destination_name)
 
-  photos_list.append(file_ref)
-
-  return "OK"
-
+  return "OK" 
 @app.route("/proceed", methods=["POST"])
-# def proceed():
-# 	order = orders.load(current_user())
-# 	handler.handle(order.snapshot())
 def proceed_animation():
   ani_request = {
     "email": request.form['email'],
@@ -57,18 +46,18 @@ def proceed_animation():
   }
 
   requestQueue.send_message(
-	MessageBody=json.dumps(ani_request)
+    MessageBody=json.dumps(ani_request)
   )
-	
   return "OK"
-
+  
+  
 @app.route("/prepare")
 def prepare():
-	return render_template(
-		'prepare.html',
-		invitation="the only limit is yourself",
-		photos=photos_list 
-		)
+  return render_template(
+    'prepare.html',
+    invitation="the only limit is yourself",
+    photos=photos_list 
+  )
 
 if __name__ == '__main__':
   app.run(host="0.0.0.0", port=8080, debug=True)
